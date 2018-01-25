@@ -341,8 +341,8 @@ if __name__ == "__main__":
         sys.exit()
     
     # Get coverage information
-    #cov = getCovData(ra0,dec0,radius=radius,columns='ra,dec,pix,pix128,gcoverage,gdepth,rcoverage,rdepth')
-    #rootLogger.info(str(len(cov))+' coverage pixels returned')
+    cov = getCovData(ra0,dec0,radius=radius,columns='ra,dec,pix,pix128,gcoverage,gdepth,rcoverage,rdepth')
+    rootLogger.info(str(len(cov))+' coverage pixels returned')
 
     # Create the healpix map
     #NSIDE = 1024  #4096
@@ -408,8 +408,9 @@ if __name__ == "__main__":
     # Create output table
     dt = np.dtype([('id',np.str_,20),('hpix',int),('num',int),('x_peak',int),('y_peak',int),('peak_value',float),('ra_peak',float),('dec_peak',float),
                    ('x_centroid',float),('y_centroid',float),('ra',float),('dec',float),('asemi',float),('bsemi',float),('theta',float),
-                   ('back_color',float),('back_mag',float),('back_fwhm',float),('back_class_star',float),
+                   ('back_color',float),('back_mag',float),('back_fwhm',float),('back_class_star',float),('back_gdepth',float),('back_rdepth',float),
                    ('nobj',int),('color',float),('mag',float),('fwhm',float),('class_star',float),('nblue',int),('blue_mag',float),
+                   ('gdepth',float),('rdepth',float),
                    ('pmra',float),('pmdec',float),('pmraerr',float),('pmdecerr',float),('nexp',int),('deltamjd',float)])
     peaks = None
     npeaks = len(tbl)
@@ -441,6 +442,17 @@ if __name__ == "__main__":
             peaks['back_mag'] = 999999.
         peaks['back_fwhm'] = np.median(catall['fwhm'])
         peaks['back_class_star'] = np.median(catall['class_star'])
+        # Depth information
+        gdgdepth = (cov['gdepth'] < 50) & (cov['gdepth'] > 0)
+        if np.sum(gdgdepth) > 0:
+            peaks['back_gdepth'] = np.median(cov['gdepth'][gdgdepth])
+        else:
+            peaks['back_gdepth'] = 999999.
+        gdrdepth = (cov['rdepth'] < 50) & (cov['rdepth'] > 0)
+        if np.sum(gdrdepth) > 0:
+            peaks['back_rdepth'] = np.median(cov['rdepth'][gdrdepth])
+        else:
+            peaks['back_rdepth'] = 999999.
         
 
     # Loop over the peaks and download data
@@ -521,6 +533,18 @@ if __name__ == "__main__":
             peaks[i]['blue_mag'] = np.median(cat0['gmag'][gdblue])
         else:
             peaks[i]['blue_mag'] = 999999.
+        # Get coverage information
+        cov0 = getCovData(peaks0['ra'],peaks0['dec'],radius=0.1,columns='ra,dec,pix,pix128,gcoverage,gdepth,rcoverage,rdepth')
+        gdgdepth = (cov0['gdepth'] < 50) & (cov0['gdepth'] > 0)
+        if np.sum(gdgdepth) > 0:
+            peaks[i]['gdepth'] = np.median(cov0['gdepth'][gdgdepth])
+        else:
+            peaks[i]['gdepth'] = 999999.
+        gdrdepth = (cov0['rdepth'] < 50) & (cov0['rdepth'] > 0)
+        if np.sum(gdrdepth) > 0:
+            peaks[i]['rdepth'] = np.median(cov0['rdepth'][gdrdepth])
+        else:
+            peaks[i]['rdepth'] = 999999.
 
         # Make sky map with THIS overdensity highlighted
         fig, ax = plt.subplots(figsize=(8,8))
