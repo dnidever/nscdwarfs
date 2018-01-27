@@ -340,6 +340,10 @@ if __name__ == "__main__":
     rootLogger.info(str(len(bcatall))+' objects found')
     if len(bcatall) == 0:
         rootLogger.info('No data')
+        # Create done file
+        f = open(donefile,'w')
+        f.write(host)
+        f.close()
         sys.exit()
     
     # Get coverage information
