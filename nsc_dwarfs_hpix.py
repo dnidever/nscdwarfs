@@ -295,7 +295,7 @@ if __name__ == "__main__":
 
     # Output name
     outbase = str(hpix)+'_'+str(radius)+'_'+str(version)
-    outdir = dir+str(hpix)+'/'+str(hpix/1000)+'/'
+    outdir = dir+str(hpix/1000)+'/'+str(hpix)+'/'
     if not os.path.exists(outdir):     # make output directory if necessary
         os.makedirs(outdir)
     outfile = outdir+outbase+'_peaks.fits'
