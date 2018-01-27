@@ -295,13 +295,15 @@ if __name__ == "__main__":
 
     # Output name
     outbase = str(hpix)+'_'+str(radius)+'_'+str(version)
-    outdir = dir+str(hpix)+'/'
+    outdir = dir+str(hpix)+'/'+str(hpix/1000)+'/'
     if not os.path.exists(outdir):     # make output directory if necessary
         os.makedirs(outdir)
+    outfile = outdir+outbase+'_peaks.fits'
+    donefile = outdir+outbase+'.done'
 
-    # Check if the output already exists
-    if os.path.exists(outdir+outbase+'_peaks.fits'):
-        print(outdir+outbase+'_peaks.fits already exists')
+    # Check if the "done" file already exists
+    if os.path.exists(donefile):
+        print('This healpix was already done')
         sys.exit()
 
     # Set up logging to screen and logfile
@@ -381,8 +383,13 @@ if __name__ == "__main__":
     mn, med, std = stats.sigma_clipped_stats(clipped,sigma=3.0,iters=5)
     nsigma = 2.5
     tbl = find_peaks(clipped,med+nsigma,box_size=small_k*2)
-
-    # Get the shapes
+    rootLogger.info(str(len(tbl))+' peaks found')
+    if len(tbl) == 0:
+        # Create done file
+        f = open(donefile,'w')
+        f.write(host)
+        f.close()
+        sys.exit()
 
     # add ra & dec positions of peaks found
     a, b = extent[:2]
@@ -586,4 +593,9 @@ if __name__ == "__main__":
     # Save the table
     rootLogger.info("Saving info to "+outdir+outbase+'_peaks.fits')
     #peaks.write(outdir+outbase+'_peaks.fits')
-    Table(peaks).write(outdir+outbase+'_peaks.fits')
+    Table(peaks).write(outfile)
+
+    # Create done file
+    f = open(donefile,'w')
+    f.write(host)
+    f.close()
