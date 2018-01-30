@@ -487,6 +487,7 @@ if __name__ == "__main__":
         if y0 < 0: y0=0
         y1 = np.int(np.ceil(peaks0['y_peak']+10))
         if y1 > (shp[1]-1): y1=(shp[1]-1)
+        #print(x0, x1, y0, y1)
         clipped0 = clipped[x0:x1+1,y0:y1+1]
         props = data_properties(clipped0)
         pcolumns = ['id', 'xcentroid', 'ycentroid', 'semimajor_axis_sigma','semiminor_axis_sigma', 'orientation']
