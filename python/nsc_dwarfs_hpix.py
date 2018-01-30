@@ -482,13 +482,12 @@ if __name__ == "__main__":
         x0 = np.int(np.floor(peaks0['x_peak']-10))
         if x0 < 0: x0=0
         x1 = np.int(np.ceil(peaks0['x_peak']+10))
-        if x1 > (shp[0]-1): x1=(shp[0]-1)
+        if x1 > (shp[1]-1): x1=(shp[1]-1)   # X is 2nd dimension
         y0 = np.int(np.floor(peaks0['y_peak']-10))
         if y0 < 0: y0=0
         y1 = np.int(np.ceil(peaks0['y_peak']+10))
-        if y1 > (shp[1]-1): y1=(shp[1]-1)
-        #print(x0, x1, y0, y1)
-        clipped0 = clipped[x0:x1+1,y0:y1+1]
+        if y1 > (shp[0]-1): y1=(shp[0]-1)   # Y is 1st dimension
+        clipped0 = clipped[y0:y1+1,x0:x1+1]
         props = data_properties(clipped0)
         pcolumns = ['id', 'xcentroid', 'ycentroid', 'semimajor_axis_sigma','semiminor_axis_sigma', 'orientation']
         #  semi axes in pixels and orientation in radians
