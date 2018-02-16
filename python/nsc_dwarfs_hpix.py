@@ -50,6 +50,7 @@ from astropy import units as u
 from astropy.stats import median_absolute_deviation as mad
 from astropy.table import Table
 from scipy.interpolate import interp1d
+from scipy import arange, array, exp
 #%matplotlib inline
 import healpy as hp
 from photutils import find_peaks, data_properties
@@ -71,6 +72,25 @@ svc = sia.SIAService(DEF_ACCESS_URL)
 import warnings
 from astropy.utils.exceptions import AstropyWarning
 warnings.simplefilter('ignore', category=AstropyWarning)
+
+
+# Extrapolation function
+def extrap1d(interpolator):
+    xs = interpolator.x
+    ys = interpolator.y
+
+    def pointwise(x):
+        if x < xs[0]:
+            return ys[0]+(x-xs[0])*(ys[1]-ys[0])/(xs[1]-xs[0])
+        elif x > xs[-1]:
+            return ys[-1]+(x-xs[-1])*(ys[-1]-ys[-2])/(xs[-1]-xs[-2])
+        else:
+            return interpolator(x)
+
+    def ufunclike(xs):
+        return array(map(pointwise, array(xs)))
+
+    return ufunclike
 
 # A function to retrieve data from a point on the sky
 def getData (ra,dec,radius=1.0,columns='*'):
@@ -500,10 +520,10 @@ if __name__ == "__main__":
         peaks[i]['theta'] = np.rad2deg(props['orientation'].value)
         # ra & dec positions of centroid
         #   use xvec/yvec defined above
-        xf = interp1d(np.arange(len(xvec)),xvec)  # function to interpolate x
-        peaks[i]['ra'] = xf(peaks[i]['x_centroid'])
-        yf = interp1d(np.arange(len(yvec)),yvec)  # function to interpolate y
-        peaks[i]['dec'] = np.float( yf(len(yvec)-peaks[i]['x_centroid']-1) )
+        xf = extrap1d(interp1d(np.arange(len(xvec)),xvec))  # function to interpolate x
+        peaks[i]['ra'] = xf([peaks[i]['x_centroid']])
+        yf = extrap1d(interp1d(np.arange(len(yvec)),yvec))  # function to interpolate y
+        peaks[i]['dec'] = np.float( yf([len(yvec)-peaks[i]['x_centroid']-1]) )
         #peaks[i]['ra'] = xvec[peaks[i]['x_centroid']]
         #peaks[i]['dec'] = yvec[-peaks[i]['y_centroid']-1]
 
@@ -592,7 +612,8 @@ if __name__ == "__main__":
         plt.ylim(ylim)
         plt.title('Overdensity CMD Galaxies, %d objects RA=%f  DEC=%f' % (len(cat0), peaks0['ra'], peaks0['dec']))
         plt.savefig(outdir+outbase+'_cmd'+str(i+1)+'_gals.png')
-        
+
+        plt.close('all')  # close all figures
         
     # Save the table
     rootLogger.info("Saving info to "+outdir+outbase+'_peaks.fits')
