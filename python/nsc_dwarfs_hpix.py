@@ -432,6 +432,16 @@ if __name__ == "__main__":
     a, b = extent[2:]
     yvec = np.arange(a,b,(b-a)/clipped.shape[0])
 
+    # Not enough pixels in density image
+    if (len(xvec)<2) | (len(yvec)<2):
+        rootLogger.info('Not enough pixels in the density map')
+        # Create done file
+        f = open(donefile,'w')
+        f.write(host)
+        f.close()
+        sys.exit()        
+
+
     tbl['ra'] = xvec[tbl['x_peak']]
     tbl['dec'] = yvec[-tbl['y_peak']-1]
     #print(tbl)
