@@ -333,6 +333,9 @@ if __name__ == "__main__":
 
     #logfile = tmpdir+"/"+base+".log"
     logfile = outdir+outbase+".log"
+    # Delete file if it exists
+    if os.path.exists(logfile):
+        os.remove(logfile)
     #fileHandler = logging.FileHandler("{0}/{1}.log".format(logPath, fileName))
     fileHandler = logging.FileHandler(logfile)
     fileHandler.setFormatter(logFormatter)
@@ -400,7 +403,15 @@ if __name__ == "__main__":
 
     # Run dwarf filter
     small_k, big_k = 2., 20.  # kernel sizes in arcminutes
-    raw, extent, delta, clipped, dsigma = dwarf_filter(bcatall['ra'],bcatall['dec'],fwhm_small=small_k,fwhm_big=big_k)
+    try:
+        raw, extent, delta, clipped, dsigma = dwarf_filter(bcatall['ra'],bcatall['dec'],fwhm_small=small_k,fwhm_big=big_k)
+    except:
+        rootLogger.info('Problems with dwarf filter')
+        # Create done file
+        f = open(donefile,'w')
+        f.write(host)
+        f.close()
+        sys.exit()
 
     # find peaks
     small_k = 2.0
@@ -489,12 +500,12 @@ if __name__ == "__main__":
     # Loop over the peaks and download data
     for i in range(npeaks):
         peaks0 = peaks[i]
-        rootLogger.info("  i="+str(i+1)+" RA="+str(peaks0['ra'])+" DEC="+str(peaks0['dec']))
+        rootLogger.info("  i="+str(i+1)+" RA="+str(peaks0['ra_peak'])+" DEC="+str(peaks0['dec_peak']))
         
         # Convert X/Y to RA/DEC
         #cat0 = getDataCuts(peaks0['ra'],peaks0['dec'],radius=0.1,classcut=0.6,fwhmcut=1.5)
         columns = 'ra,dec,pmra,pmdec,pmraerr,pmdecerr,ndet,deltamjd,gmag,rmag,fwhm,class_star'
-        cat0 = getDataCuts(peaks0['ra'],peaks0['dec'],radius=0.1,columns=columns)
+        cat0 = getDataCuts(peaks0['ra_peak'],peaks0['dec_peak'],radius=0.1,columns=columns)
         print(str(len(cat0))+' objects found')
 
         # Measure the morphology around the overdensity
