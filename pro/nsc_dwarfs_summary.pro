@@ -1,50 +1,84 @@
-pro nsc_dwarfs_summary
+pro nsc_dwarfs_summary,version
 
 ; Create a summary file and remove duplicates and make HTML pages
 
 NSC_ROOTDIRS,dldir,mssdir,localdir,host
-version = 'v2'
+if n_elements(version) eq 0 then version = 'v3'
 nside = 64
 radeg = 180.0d0 / !dpi
 dir = dldir+'users/dnidever/nsc/dwarfs/'+version+'/'
 radius = '1.0'
 
-pix = lindgen(49152)
+npix = 49152L
+pix = lindgen(npix)
 
-files = file_search(dir+strtrim(pix/1000,2)+'/'+strtrim(pix,2)+'_'+radius+'_'+version+'_peaks.fits')
-test = file_test(files)
-stop
+;files = file_search(dir+strtrim(pix/1000,2)+'/'+strtrim(pix,2)+'_'+radius+'_'+version+'_peaks.fits')
+;files = file_search(dir+strtrim(pix/1000,2)+'/'+strtrim(pix,2)+'/'+strtrim(pix,2)+'_'+radius+'_'+version+'_peaks.fits')
+files = dir+strtrim(pix/1000,2)+'/'+strtrim(pix,2)+'/'+strtrim(pix,2)+'_'+radius+'_'+version+'_peaks.fits'
+;test = file_test(files)
+;stop
 ;files = file_search(dir+'*/*_peaks.fits')
-info = file_info(files)
-g = where(info.size gt 5760,ng)
+;info = file_info(files)
+;g = where(info.size gt 5760,ng)
 
 undefine,all
-for i=0,ng-1 do begin
-  print,i+1,' ',files[g[i]]
-  str = mrdfits(files[g[i]],1)
-  nstr = n_elements(str)
-  add_tag,str,'field','',str
-  add_tag,str,'mapfile','',str
-  add_tag,str,'cmdfile','',str
-  add_tag,str,'healpix',0L,str
-  base = file_basename(files[g[i]],'_peaks.fits')
-  dum = strsplit(base,'_',/extract)
-  ra1 = double(dum[0])
-  dec1 = double(dum[1])
-  theta = (90-dec1)/radeg
-  phi = ra1/radeg
-  ang2pix_ring,nside,theta,phi,pix
-  str.field = base
-  str.mapfile = base+'_skymap_peaks.png'
-  str.cmdfile = base+'_cmd'+strtrim(lindgen(nstr)+1,2)+'.png'
-  str.healpix = pix[0]
-  push,all,str
+for i=0,npix-1 do begin
+  print,i+1,' ',files[i]
+  info = file_info(files[i])
+  if info.exists eq 1 then begin
+    str = mrdfits(files[i],1)
+    nstr = n_elements(str)
+    add_tag,str,'field','',str
+    add_tag,str,'mapfile','',str
+    add_tag,str,'cmdfile','',str
+    add_tag,str,'healpix',0L,str
+    base = file_basename(files[i],'_peaks.fits')
+    ;dum = strsplit(base,'_',/extract)
+    ;ra1 = double(dum[0])
+    ;dec1 = double(dum[1])
+    ;theta = (90-dec1)/radeg
+    ;phi = ra1/radeg
+    theta = (90-str.dec)/radeg
+    phi = str.ra/radeg
+    ang2pix_ring,nside,theta,phi,pix
+    str.field = base
+    str.mapfile = base+'_skymap_peaks.png'
+    str.cmdfile = base+'_cmd'+strtrim(lindgen(nstr)+1,2)+'.png'
+    str.healpix = pix[0]
+    if n_elements(all) eq 0 then begin
+      schema = str
+      struct_assign,{dum:''},schema
+      all = replicate(schema,npix)
+    endif
+    all[i] = str
+    ;push,all,str
+  endif
 endfor
 
-;mwrfits,all,'nsc_dwarf_peaks.fits',/create
-;9019 peaks.
+stop
+
+; only keep ones that succeeded
+gd = where(all.id ne '',ngd)
+all = all[gd]
+; 26530 of 
 
 ; Only keeps peaks that are inside their healpix boundary
+gd = where(all.hpix eq all.healpix,ngd)
+; 14641
+
+; Merge duplicate detections of a single object due to sub-clumps?
+
+; Add galactic coordinates
+add_tag,all,'glon',0.0d0,all
+add_tag,all,'glat',0.0d0,all
+glactc,all.ra,all.dec,2000.0,glon,glat,1,/deg
+all.glon = glon
+all.glat = glat
+
+;mwrfits,all,dir+'nsc_dwarf_peaks.'+version+'.fits',/create
+
+
+
 
 stop
 
